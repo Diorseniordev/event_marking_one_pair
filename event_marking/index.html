@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Event marking experiment</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+
+    <style>
+      #window {
+        margin-top: 10px;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="window" width="1024" height="700"></canvas>
+
+    <div>
+      <!-- <h5>Data preview:</h5> -->
+      <pre id="data_preview"></pre>
+    </div>
+
+    <script src="components.js"></script>
+    <script>
+               /**************************
+                * Define global variables
+                *************************/
+               const REQUESTED_MOVIE = "mouse_frames_24";
+
+               let experimentData = {
+                   dataURL            : 'cgi/test.py',  											// The location to which data should be sent
+                   testMovie          : REQUESTED_MOVIE,                                          // The movie used after the training phase
+                   minEventsRequired  : 3,                                                        // Minimum number of events participant has to mark
+                   turkID             : 'A123',
+                   movieIsPlaying     : false,
+                   currentImageFrame  : 0,
+                   markerMode         : 'add',
+                   currentMarkerPair  : [],
+                   eventMarkerPairs   : [],
+                   currentPhase       : 'slideshow_1',
+                   currentMovie       : 'yak_frames_24',
+                   slideshow_data     : [],
+                   recollection_data  : [],
+                   event_marking_data : [],
+                   bslideshow1        : 0,
+                   bslideshow2        : 0 
+               };
+               let appState = 0;
+               
+               const movie_parameters = {
+                   ape_frames_24 :           { max_images : 4, image_size: [640, 360]}, //151
+                   baby_frames_24 :          { max_images : 4, image_size: [360, 360]},  //453
+                   goodfellas_frames_24 :    { max_images : 4, image_size: [640,360]},   //195
+                   yak_frames_24 : 		  { max_images : 10, image_size:  [640, 360]}, // 132 10
+                   mouse_frames_24 :         { max_images : 10, image_size: [640, 360]} // 151 20
+               };
+
+               const HOVER_COLOR = "rgb(50,50,50)";
+               const TEXT_COLOR  = "rgb(220, 220, 220)";
+               /*****************************************
+               // Define Window
+                ****************************************/
+
+               let w = new Window("window", "rgb(0,0,0)", "rgb(0,0,0)");
+               let globalID = null;
+               let currentDisplayFunction = null;
+
+               /**************************************
+                * Define rectangles (for visual layout
+                **************************************/
+               let control_group_rectangle = new Rectangle({position: [0, -135], size: [900,200], lineWidth: 1, fillColor : "rgb(30, 30, 30"});
+               let frame_player_background = new Rectangle({position : [0,155], size : [900,380], fillColor : "black"});
+               let mark_rectangle = new Rectangle({position : [0, -305], size : [900, 80], fillColor : "rgb(30, 30, 30)"});
+
+               /**************************************
+               // Define buttons
+               **************************************/
+               let button_play = new Button({position:[0, -100], size:[40,40], text: ">", backgroundColor : "black", mouseHoverColor : HOVER_COLOR});
+               let button_next = new Button({position:[95, -100], size: [40, 40], text: ">>", backgroundColor : "black", mouseHoverColor : HOVER_COLOR});
+               let button_previous = new Button({position: [-95, -100], size: [40, 40], text: "<<", backgroundColor : "black", mouseHoverColor : HOVER_COLOR});
+
+               let mark_event_button = new Button({position: [0, -160], size: [230,50], text:"Mark event start", backgroundColor : "rgb(70, 70, 130)", mouseHoverColor : "rgb(70, 70, 150)"});
+               let toggle_marker_mode_button = new Button({position: [300, -320], size: [200, 40], text: "Enable eraser", backgroundColor: "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)", font : "16px Arial"});
+               let review_instructions_button= new Button({position: [-300, -320], size: [200, 40], text: "Review instructions", backgroundColor: "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)",  font : "16px Arial"});
+
+               let ready_button = new Button({position : [0, -320], size: [230, 40], text: "Ready!", backgroundColor : "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)"});
+
+               /*************************************
+                * Text stimuli
+                ************************************/
+               let instruction_text = new Text({text : "Press the button or press the spacebar to mark the current frame as the start of an event", position : [0, -215], color : TEXT_COLOR, font : "18px Arial"});
+               let completed_text   = new Text({text : "Press ready when all events are marked (requires at least 3)!", position: [0, -280], color : TEXT_COLOR, font : "16px Arial"});
+
+               /**********************************
+                * Image controls
+                *********************************/
+               let imageLoader = new ImageLoader();
+               let movie_image = new ImageStim({image: null, position: [0, 160], size: [480, 360]});
+
+               /**************************************************
+                * Slider control: used for showing movie progress
+                *************************************************/
+               let slider = new Slider([0, -55], [850, 15]);
+
+               slider.onValueChanged = function(v){
+                   experimentData.currentImageFrame = parseInt(v*(movie_parameters[REQUESTED_MOVIE].max_images-1));
+                   movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
+               };
+
+               // Marker clicked, check if we should remove it
+               slider.onBookmarkClicked = function(bookmarkID){
+                   if(experimentData.markerMode !== "delete")
+                       return;
+
+                   if (experimentData.currentMarkerPair.length == 1 && experimentData.currentMarkerPair[0].id == bookmarkID){
+                           slider.removeBookmark(bookmarkID);
+                           experimentData.currentMarkerPair = [];
+                           return;
+                   }
+
+                   for( let i = 0; i < experimentData.eventMarkerPairs.length; ++i){
+                       if (experimentData.eventMarkerPairs[i][0].id == bookmarkID || experimentData.eventMarkerPairs[i][1].id == bookmarkID){
+                           let bm1 = experimentData.eventMarkerPairs[i][0].id;
+                           let bm2 = experimentData.eventMarkerPairs[i][1].id;
+                           console.log("Deleting bookmark " + bm1.toString() + " and " + bm2.toString());
+                           slider.removeBookmark(experimentData.eventMarkerPairs[i][0].id);
+                           slider.removeBookmark(experimentData.eventMarkerPairs[i][1].id);
+                           experimentData.eventMarkerPairs.splice(i,1);
+                           break;
+                       }
+                   }
+
+                   ready_button.enabled = validateMinimumRequirement();
+               };
+
+               /*********************************
+                * Assign button callback functions
+                ********************************/
+               button_play.mouseClickedCallback = function(){
+                   console.log("play clicked");
+                   if (experimentData.movieIsPlaying){
+                       this.label = ">";
+                       button_next.enabled = true;
+                       button_previous.enabled = true;
+
+                   } else {
+                       this.label = "||";
+                       button_next.enabled = false;
+                       button_previous.enabled = false;
+                       movie_player_time = new Date().getTime();
+                   }
+                   experimentData.movieIsPlaying = !experimentData.movieIsPlaying;
+               };
+
+               button_next.mouseClickedCallback = function(){
+                   if(experimentData.currentImageFrame < movie_parameters[REQUESTED_MOVIE].max_images-1) {
+                       experimentData.currentImageFrame++;
+                       movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
+                       slider.value = experimentData.currentImageFrame / (movie_parameters[REQUESTED_MOVIE].max_images-1);
+                   }
+               };
+
+               button_previous.mouseClickedCallback = function(){
+                   if(experimentData.currentImageFrame > 0) {
+                       experimentData.currentImageFrame--;
+                       movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
+                       slider.value = experimentData.currentImageFrame / (movie_parameters[REQUESTED_MOVIE].max_images-1);
+                   }
+               };
+
+               mark_event_button.mouseClickedCallback = function(){
+                   let color = "";
+                   if (experimentData.currentMarkerPair.length === 1){
+                     color = experimentData.currentMarkerPair[0].color;
+                   } else {
+                     let nMarkers = slider._bookmarks.counter;
+                     let h = (nMarkers*37)%360;
+                     color = 'hsla(' + h.toString() + ', 50%, 50%,0.7)';
+                   }
+                   let id = slider.addBookmark(color);
+
+                   experimentData.currentMarkerPair.push({id: id, frame: experimentData.currentImageFrame, color: color});
+                   if (experimentData.currentMarkerPair.length === 2){
+                       experimentData.eventMarkerPairs.push(experimentData.currentMarkerPair);
+                       experimentData.currentMarkerPair = [];
+                       instruction_text.text = "Press the button or press the spacebar to mark the current frame as the start of an event";
+                       mark_event_button.label = "Mark event start";
+                   } else {
+                       instruction_text.text = "Press the button or press the spacebar to mark the current frame as the end of an event";
+                       mark_event_button.text = "Mark event end";
+                   }
+
+                   ready_button.enabled = validateMinimumRequirement();
+               };
+
+               toggle_marker_mode_button.mouseClickedCallback = function(){
+                   let enable_controls = false;
+                   if (experimentData.markerMode === "add"){
+                       experimentData.markerMode = "delete";
+                       this.label = "Disable eraser";
+                       this._backgroundColor = "rgb(150, 70, 70)";
+                       this._mouseHoverColor = "rgb(130, 70, 70)";
+                       instruction_text.text = "Click a marker on the timeline to delete it";
+                       enable_controls = false;
+                       if (experimentData.movieIsPlaying){
+                         button_play.doClick();
+                       }
+                   } else {
+                       experimentData.markerMode = "add";
+                       this.label = "Enable eraser";
+                       this._backgroundColor = "rgb(20, 70, 20)";
+                       this._mouseHoverColor = "rgb(50,130,50)";
+                       if (experimentData.currentMarkerPair.length === 0){
+                         instruction_text.text = "Press the button or press the spacebar to mark the current frame as the start of an event";
+                         mark_event_button.label = "Mark event start";
+                       }
+                       else {
+                         instruction_text.text = "Press the button or press the spacebar to mark the current frame as the end of an event";
+                         mark_event_button.text = "Mark event end";
+                       }
+                       enable_controls = true;
+                   }
+                   button_play.enabled = enable_controls;
+                   button_next.enabled = enable_controls;
+                   button_previous.enabled = enable_controls;
+                   mark_event_button.enabled = enable_controls;
+                   review_instructions_button.enabled = enable_controls;
+                   ready_button.enabled = enable_controls ? validateMinimumRequirement() : enable_controls;
+
+               };
+
+               review_instructions_button.mouseClickedCallback = function(){
+                   if (experimentData.movieIsPlaying)
+                     button_play.doClick();
+                    appState = 8;
+                   enableEventMarkingControls(false);
+                   initiateInstructionScreen("instructions_3");
+                   currentDisplayFunction = displayInstructionScreen;
+               };
+
+
+               /*********************************************************************************************
+                * Requirements screen
+                ********************************************************************************************/
+               // Requirements screen components
+               let requirements_ready_button = new Button({position : [0, -300], size: [230, 40], text: "Proceed", backgroundColor : "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)"});
+               let toggle_fullscreen_button = new Button({position: [0, -50], size: [230, 40], text: "Enter fullscreen", backgroundColor : "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)"});
+
+               let requirements_title = new Text({text: "Requirements", position: [0, 300], font: '26px Arial', color:'white'})
+               let requirements_info  = new Text({text: "Fullscreen is required to provide a distraction-free working condition", position: [0, -100], font: "16px Arial", color:"rgb(200,200,200)"})
+               let r1 = new Text({position: [0,200], font: '24px Arial'});
+               let r2 = new Text({position: [0,100], font: '24px Arial'});
+               let r3 = new Text({position: [0,0], font: '24px Arial'});
+
+               let r1_rect = new Rectangle({position: [0, 200], size: [600, 60], fillColor: 'black'});
+               let r2_rect = new Rectangle({position: [0, 100], size: [600, 60], fillColor: 'black'});
+               let r3_rect = new Rectangle({position: [0, -50], size: [600, 160], fillColor: 'black'});
+
+               // Callback function for fullscreen button
+               toggle_fullscreen_button.mouseClickedCallback = function(){
+                   w.toggleFullscreen();
+               };
+
+               // Callback function for the proceed button
+               requirements_ready_button.mouseClickedCallback = function(){
+                        initiateLoadingScreen();
+                        window.cancelAnimationFrame(globalID);
+                        currentDisplayFunction = displayLoaderScreen;
+                        globalID = window.requestAnimationFrame(currentDisplayFunction);
+                        completeRequirementsScreen();
+                        appState = 1;
+                        console.log(appState);
+                        
+               };
+
+               // Check if all requirements are met if a fullscreen change is detected
+               w.onfullscreenchange = function(){
+                   if (appState == 0) {requirements_ready_button.enabled= validateRequirements();}
+                   console.log(appState, w.isFullScreen);
+                   if(!w.isFullScreen){
+                        switch (appState) {
+                            case 1:
+                                loading_complete_button.text = 'Reenter Full Screen';
+                            break;
+                            case 2:
+                                console.log("phase 2")
+                                start_experiment_button.text = 'Reenter Full Screen';
+                                break;
+                            case 3:
+                                experimentData.bslideshow1 = -1;
+                                recollection_complete_button.text = 'Reenter Full Screen';
+                                recollection_complete_button.enabled = true;
+                                break;
+                            case 4:
+                                recollection_complete_button.text = 'Reenter Full Screen';
+                                recollection_complete_button.enabled = true;
+                                
+                                break;
+                            case 5:
+                                start_experiment_button.text = 'Reenter Full Screen';
+                                break;
+                            case 6:
+                                experimentData.bslideshow2 = -1;
+                                recollection_complete_button.text = 'Reenter Full Screen';
+                                recollection_complete_button.enabled = true;
+                                break;
+                            case 7:
+                                recollection_complete_button.text = 'Reenter Full Screen';
+                                recollection_complete_button.enabled = true;
+                                
+                                break;
+                            case 8:
+                                start_experiment_button.text = 'Reenter Full Screen';
+                                break;
+                            case 9:
+                                ready_button.text = 'Reenter Full Screen';
+                                ready_button.enabled = true;
+                                break;
+                            case 10:
+                                start_experiment_button.text = 'Reenter Full Screen';
+                                break;
+                            default:
+                            break;
+                        }
+                   } 
+               };
+
+               // Functions for checking requirements
+               function validateRequirements(){
+                   let resolutionCheck = validateResolution();
+                   let deviceCheck     = validateDevice();
+                   let fullscreenCheck = validateFullscreen();
+
+                   return resolutionCheck && deviceCheck && fullscreenCheck;
+               }
+               function validateResolution(){
+                   let screen_width = screen.availWidth;
+                   let screen_height = screen.availHeight;
+
+                   let validationCheck = screen_width >= 1024 && screen_height >= 768;
+                   r1.text = "Detected resolution: " + screen_width.toString() + " x " + screen_height.toString();
+                   r1.color = validationCheck ? "green" : "red";
+
+                   return validationCheck;
+               }
+               function validateDevice(){
+                   let validationCheck = !window.mobileAndTabletcheck();
+                   if (validationCheck) {
+                       r2.text = "Detected device: Laptop or desktop";
+                       r2.color = "green";
+                   }
+                   else {
+                       r2.text = "Detected device: Mobile or tablet device";
+                       r2.color = "red";
+                   }
+
+                   return validationCheck;
+               }
+
+               function validateFullscreen(){
+                   if (w.isFullScreen){
+                       r3.color = "green";
+                       r3.text = "Fullscreen mode: active";
+                       toggle_fullscreen_button.text = "Leave fullscreen";
+
+                   } else {
+                       r3.color = "red";
+                       r3.text = "Fullscreen mode: inactive";
+                       toggle_fullscreen_button.text = "Enter fullscreen";
+                   }
+                   return w.isFullScreen;
+               }
+
+               // Initialise the requirements screen: perform an initial check and format the text
+               function initializeRequirementsScreen(){
+                   requirements_ready_button.enabled = validateRequirements();
+                   toggle_fullscreen_button.enabled = true;
+               }
+
+               // Deactivate and remove controls that are not needed anymore
+               function completeRequirementsScreen(){
+                   requirements_ready_button.enabled = false;
+                   toggle_fullscreen_button.enabled = false;
+                   delete r1, r2, r3, requirements_ready_button, toggle_fullscreen_button, requirements_title, r1_rect, r2_rect, r3_rect;
+               }
+
+               // Display requirements screen content
+               function displayRequirementsScreen(){
+                   Window.clear();
+
+                   requirements_title.draw();
+                   r1_rect.draw();
+                   r2_rect.draw();
+                   r3_rect.draw();
+                   r1.draw();
+                   r2.draw();
+                   r3.draw();
+                   requirements_info.draw();
+                   requirements_ready_button.draw();
+                   toggle_fullscreen_button.draw();
+                   globalID = window.requestAnimationFrame(currentDisplayFunction);
+               }
+
+               /*********************************************************************************************
+                * Loader screen
+                ********************************************************************************************/
+               // Define Loader Screen components
+               let loading_complete_button = new Button({position:[0, -300], size: [230, 40], text: "Proceed", backgroundColor : "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)"});
+               let progress_bar            = new ProgressBar([0,0],[400,30], 0.5);
+               let loading_text            = new Text({text : "Loading", position : [-50, 100], color : 'rgb(220, 220, 220)', font : "24px Arial"});loading_text._textAlign = "left";
+
+               // Initiate the loading screen: Before this screen is display, we start to load all the images needed for the experiment
+               function initiateLoadingScreen(){
+                   imageLoader.enqueue('images/instructions_1.png','instructions_1');
+                   imageLoader.enqueue('images/instructions_2.png','instructions_2');
+                   imageLoader.enqueue('images/instructions_3.png','instructions_3');
+                   imageLoader.enqueue('images/instructions_4.png','instructions_4');
+
+                   for (let i = 0; i < movie_parameters[REQUESTED_MOVIE]['max_images']; ++i)
+                       imageLoader.enqueue('images/' + REQUESTED_MOVIE + '/' + (i*6).toString() + ".png", REQUESTED_MOVIE + i.toString());
+                   for (let i = 0; i < movie_parameters['yak_frames_24']['max_images']; ++i)
+                       imageLoader.enqueue('images/yak_frames_24/' + (i*6).toString() + '.png', 'yak_frames_24' + i.toString());
+                   imageLoader.processImageQueue();
+               }
+
+               // Disable and remove any components that are not needed anymore
+               function completeLoadingScreen(){
+                   loading_complete_button.enabled = false;
+                   delete loading_complete_button, loading_text, progress_bar;
+               }
+
+               // Display the loader screen. First checks the status of the image loader before drawing the components
+               let counter = 0; // Used to create text animation
+               function displayLoaderScreen(){
+                   progress_bar.progress = imageLoader.percentageLoaded;
+                   if (imageLoader._loaderStatus === ImageLoaderStatus.Processing){
+                       counter = (counter + 1)%81;
+                       loading_text.text = "Loading " + ". ".repeat(Math.round(counter/20));
+                   } else {
+                       if (loading_complete_button.enabled === false) {
+                           loading_complete_button.enabled = true;
+                           loading_text.text = "Done!";
+                       }
+                   }
+
+                   Window.clear();
+                   loading_complete_button.draw();
+                   progress_bar.draw();
+                   loading_text.draw();
+                   globalID = window.requestAnimationFrame(currentDisplayFunction);
+               }
+
+               // Function that is called when the button beneath the progress bar is pressed
+               loading_complete_button.mouseClickedCallback = function(){
+                //    console.log(loading_complete_button._btnText._text);
+                   if(loading_complete_button._btnText._text === 'Proceed') {
+                        completeLoadingScreen();
+                        initiateInstructionScreen("instructions_1");
+
+                        window.cancelAnimationFrame(globalID);
+                        currentDisplayFunction = displayInstructionScreen;
+                        window.requestAnimationFrame(currentDisplayFunction);
+                        appState = 2;
+                        console.log(appState);
+                   } else {
+                    
+                       w.toggleFullscreen();
+                       loading_complete_button.text = 'Proceed';
+                   }
+                   
+               };
+
+               /****************************************************************************************************
+                * Instruction screen
+                ****************************************************************************************************/
+               // Define instruction screen components
+                let start_experiment_button = new Button({position:[0, -300], size: [230, 40], text: "Proceed", backgroundColor : "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)"});
+                let instruction_image = new ImageStim({image: null, position: [0, 0], size : [1024, 700]});
+                let worker_id;
+                function initiateInstructionScreen(im){
+                    
+                    console.log(appState);
+                    if(!w.isFullScreen) w.toggleFullscreen()
+                    instruction_image.image = imageLoader.getImage(im);
+                    start_experiment_button.enabled = true;
+                    worker_id = window.location.hash.substring(1, window.location.hash.length );
+                    experimentData.turkID = worker_id;
+                    //console.log(experimentData);
+               }
+
+               function completeInstructionScreen(){
+                   start_experiment_button.enabled = false;
+               }
+
+               function displayInstructionScreen(){
+                   instruction_image.draw();
+                   start_experiment_button.draw();
+                   globalID = window.requestAnimationFrame(currentDisplayFunction);
+               }
+
+               start_experiment_button.mouseClickedCallback = function(){
+                   console.log(start_experiment_button._btnText._text)
+                   if(start_experiment_button._btnText._text === 'Proceed'){
+                        completeInstructionScreen();
+                        switch (experimentData.currentPhase){
+                            case "slideshow_1":
+                                initiateSlideshowTask();
+                                currentDisplayFunction = displaySlideshowTask;
+                                appState = 3;
+                                console.log(appState);
+                                break;
+                            case "recollection_1":
+                                initiateEventRecollectionTask();
+                                currentDisplayFunction = displayEventRecollectionTask;
+                                appState = 4;
+                                console.log(appState);
+                                break;
+                            case "slideshow_2":
+                                initiateSlideshowTask();
+                                currentDisplayFunction = displaySlideshowTask;
+                                appState = 6;
+                                console.log(appState);
+                                break;
+                            case "recollection_2":
+                                initiateEventRecollectionTask();
+                                currentDisplayFunction = displayEventRecollectionTask;
+                                appState = 7;
+                                console.log(appState);
+                                break;
+                            case "event_marking":
+                                initiateEventMarking();
+                                currentDisplayFunction = displayEventMarking;
+                                ready_button.text = 'Ready!'
+                                ready_button.enabled = validateMinimumRequirement();
+                                appState = 9;
+                                console.log(appState);
+                                break;
+                            case "debriefing":
+                                appState = 10;
+                                console.log(appState);
+                                if (w.isFullScreen){
+                                    w.toggleFullscreen();
+                                }
+                            default:
+                                console.log("Unrecognized event");
+                                window.location = window.document.referrer + '#return';
+                                break;
+                        }
+
+                        window.cancelAnimationFrame(globalID);
+                        globalID = window.requestAnimationFrame(currentDisplayFunction);
+                   } else {
+                       w.toggleFullscreen();
+                       start_experiment_button.text = 'Proceed';
+                   }
+                   
+               };
+
+               /************************************************
+               * Display Slide Show Task
+               ************************************************/
+               // Function that gets executed prior to running the slideshow task
+               let countdown_text   = new Text({text : "", position : [0, 160], color : TEXT_COLOR, font: "24px Arial"});
+
+               function initiateSlideshowTask(){
+                   experimentData.currentMovie = (experimentData.currentPhase === "slideshow_1") ? "yak_frames_24" : REQUESTED_MOVIE;
+                   experimentData.currentImageFrame = -4;
+
+                   w.clearKeyboardBuffer();
+                   instruction_text.text = "Press spacebar to proceed to the next frame";
+                   instruction_text.font = "24px Arial";
+                   instruction_text.position = [0, -200];
+
+                   countdown_text.text = "Ready?";
+                   movie_image.size = movie_parameters[experimentData.currentMovie]['image_size'];
+                   movie_image.image = imageLoader.getImage(experimentData.currentMovie + '0');
+                   slider.value = 0;
+
+                   experimentData.slideshow_data = [];
+                   for (let i = 0; i < movie_parameters[experimentData.currentMovie]['max_images'] + 4; ++i){
+                       experimentData.slideshow_data.push({'movie' : experimentData.currentMovie, 'frame' : i-4, 'requested_onset':null, 'onset_call' : null, 'rt': null, 'status':0});
+                   }
+               }
+
+               // Code that runs after the slideshow task: posts the data and updates the phase of the experiment.
+               //  it is important to set movie_image to null, because this can be used in the event marking task to check if
+               //  it is the first time that the task is viewed (and not a second time after reviewing instructions)
+               function completeSlideshowTask(){
+                   let post_data = new PostData(experimentData.dataURL);
+                   post_data.post(JSON.stringify({'turkID' : experimentData.turkID, 'data_type' : experimentData.currentPhase, 'data_content': experimentData.slideshow_data}));
+
+                   movie_image.image = null;
+                   if (experimentData.currentPhase === "slideshow_1"){
+                       appState = 4;
+                       experimentData.currentPhase = "recollection_1"
+                   } else if (experimentData.currentPhase === "slideshow_2"){
+                       appState = 7;
+                       experimentData.currentPhase = "recollection_2";
+                   }
+               }
+
+               let space_was_pressed = false;
+               function displaySlideshowTask(t){
+                   // Process keyboard
+                   if (experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset'] === null) {
+                       experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset'] = t;
+                       experimentData.slideshow_data[experimentData.currentImageFrame + 4]['onset_call']      = performance.now();
+                   }
+
+                   let keys = w.keysPressed;
+
+
+                   if (keys.has("Space") && space_was_pressed === false){
+                       space_was_pressed = true;
+                       let bflag;
+                       experimentData.currentPhase == 'slideshow_1' ? bflag = experimentData.bslideshow1: bflag = experimentData.bslideshow2;
+                       experimentData.slideshow_data[experimentData.currentImageFrame+4]['rt'] = performance.now() - experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset'];
+                       experimentData.slideshow_data[experimentData.currentImageFrame+4]['status'] = bflag;
+                       
+                       experimentData.currentImageFrame += 1;
+
+                       if (experimentData.currentImageFrame < 0){
+                           countdown_text.text = (-experimentData.currentImageFrame).toString();
+                       } else if (experimentData.currentImageFrame < movie_parameters[experimentData.currentMovie]['max_images']) {
+                           movie_image.image = imageLoader.getImage(experimentData.currentMovie + experimentData.currentImageFrame.toString());
+
+                       } else {
+                           completeSlideshowTask();
+                           initiateEventRecollectionTask();
+                           displayEventRecollectionTask();
+                           return;
+                       }
+                   }
+                   if (space_was_pressed === true && !keys.has("Space"))
+                       space_was_pressed = false;
+
+                   // Draw slideshow components
+                   Window.clear();
+                   frame_player_background.draw();
+                   control_group_rectangle.draw();
+                   if (experimentData.currentImageFrame < 0){
+                       countdown_text.draw();
+                   } else {
+                       movie_image.draw();
+                   }
+                   //slider.draw();
+                   instruction_text.draw();
+
+                   globalID = window.requestAnimationFrame(currentDisplayFunction);
+               }
+
+               /*****************************************************
+               * Display event recollection Task
+               *****************************************************/
+               // Components
+               let recollection_complete_button = new Button({position : [0, -300], size: [230, 40], text: "Ready!", backgroundColor : "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)"});
+               let recollection_input = new TextInput({position: [0, 0], size:[600, 400]});
+               let minimum_characters_text = new Text({position : [0, -250], text: "You can proceed after typing at least 30 characters", font: "16px Arial"});
+
+               recollection_input.keyDownCallback = function(e){
+                   let len = (recollection_input.text.match(/[^\n]*\n[^\n]*/gi)||[]).length;
+                   // console.log((recollection_input.text.match(/\n/g)||[]).length)
+                   if(recollection_complete_button._btnText._text === 'Ready!') recollection_complete_button.enabled = len >= 2;
+                  
+                   
+               };
+
+               // Prepare components
+               function initiateEventRecollectionTask(){
+                 if(recollection_complete_button._btnText._text === 'Ready!') recollection_complete_button.enabled = false;
+                 else recollection_complete_button.enabled = true;
+                 instruction_text.text = "Please type as many actions as you can remember. Start each action on a new line.";
+                 instruction_text.position = [0, 300];
+                 recollection_input.enabled = true;
+                 recollection_input.focus();
+                 recollection_input.text = "";
+               }
+
+               // Store data and update phase
+               function completeEventRecollectionTask(){
+                   let post_data = new PostData(experimentData.dataURL);
+                   post_data.post(JSON.stringify({
+                       'turkID' : experimentData.turkID,
+                       'data_type' : experimentData.currentPhase,
+                       'data_content': {'recollection': recollection_input.text, 'movie': experimentData.currentMovie}
+                   }));
+
+                   recollection_input.enabled = false;
+                   if(recollection_complete_button._btnText._text == 'Ready!') recollection_complete_button.enabled = false;
+                   else recollection_complete_button.enabled = true;
+                   if (experimentData.currentPhase === "recollection_1"){
+                       experimentData.currentPhase = "slideshow_2";
+                   } else if (experimentData.currentPhase === "recollection_2"){
+                       experimentData.currentPhase = "event_marking";
+                   }
+               }
+
+               // Draw recollection screen components
+               function displayEventRecollectionTask(){
+                   Window.clear();
+
+                   instruction_text.draw();
+                   recollection_complete_button.draw();
+                   minimum_characters_text.draw();
+
+                   globalID = window.requestAnimationFrame(displayEventRecollectionTask);
+               }
+
+
+               recollection_complete_button.mouseClickedCallback = function(){
+                    if(recollection_complete_button._btnText._text === 'Ready!'){
+                        completeEventRecollectionTask();
+                        if (experimentData.currentPhase == "slideshow_2")
+                        {
+                            appState = 5;
+                            initiateInstructionScreen('instructions_2');
+                        }
+                        else
+                        {
+                            appState = 8;
+                            initiateInstructionScreen('instructions_3');
+                        }
+                        window.cancelAnimationFrame(globalID);
+                        currentDisplayFunction = displayInstructionScreen;
+                        globalID = window.requestAnimationFrame(currentDisplayFunction);
+                        
+                        console.log(appState);
+                    } else {
+                        w.toggleFullscreen();
+                        //ready_button.enabled = validateMinimumRequirement();
+                        let len = (recollection_input.text.match(/[^\n]*\n[^\n]*/gi)||[]).length;
+                        
+                        recollection_complete_button.enabled = len >= 2;
+                        recollection_complete_button.text = 'Ready!';
+                    }
+                    
+               };
+
+               /*******************************
+                * Main screen
+                ******************************/
+               // This function gets called before the event marking screen is shown
+               // The first time this happens (when movie_image.image == null), the slider and movie image are also configured
+               function initiateEventMarking(){
+                   if (movie_image.image == null){
+                       experimentData.currentImageFrame = 0;
+                       movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
+                       movie_image.size  = movie_parameters[REQUESTED_MOVIE]['image_size'];
+                       slider.value = 0;
+                   }
+
+                   w.clearKeyboardBuffer();
+                   instruction_text.text = "Please indicate all of the events that happened. For each event, mark the start and end frames on the timeline."
+                   instruction_text.position = [0, -215];
+                   instruction_text.font = "18px Arial";
+                   enableEventMarkingControls(true);
+               }
+
+               // Function that allows enabling or disabling (through v parameter), all the controls on the event marking screen
+               function enableEventMarkingControls(v){
+                   slider.enabled = v;
+                   button_play.enabled = v;
+                   button_next.enabled=  v;
+                   button_previous.enabled = v;
+                   mark_event_button.enabled = v;
+                   ready_button.enabled = v;
+                   review_instructions_button.enabled = v;
+                   toggle_marker_mode_button.enabled = v;
+
+                   if (v)
+                       ready_button.enabled = validateMinimumRequirement();
+               }
+
+               // Function that gets called when the event marking task should be completed. It constructs a list with
+               //  all the marked events, checks if sufficient events have been marked, and if so, posts the data.
+               function completeEventMarking(){
+                   appState = 10;
+                   let marker_data = getMarkerData();
+
+                   let post_data = new PostData(experimentData.dataURL);
+                   post_data.post(JSON.stringify({'turkID' : experimentData.turkID, 'data_type' : experimentData.currentPhase, 'data_content': marker_data}));
+                //    post_data = new PostData('cgi/modify.py');
+                //    post_data.post(JSON.stringify({'turkID' : experimentData.turkID}));
+                   return true;
+               }
+
+               function validateMinimumRequirement(){
+                   let marker_data = getMarkerData();
+
+                   return marker_data.length >= experimentData.minEventsRequired && experimentData.currentMarkerPair.length != 1;
+               }
+
+               // Constructs a list with marked events
+               function getMarkerData(){
+                   let bookmarks = slider.getBookmarks();
+                   let marker_data = [];
+
+                   for(let i = 0; i < experimentData.eventMarkerPairs.length; ++i){
+                       let first = experimentData.eventMarkerPairs[i][0].id;
+                       let second= experimentData.eventMarkerPairs[i][1].id;
+
+                       let first_frame  = Math.round(bookmarks[first].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
+                       let second_frame = Math.round(bookmarks[second].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
+
+                       let row_data = {'movie': experimentData.testMovie, 'trial' : (i+1), 'first_id' : first.toString(), 'second_id' : second.toString(), 'first_frame' : first_frame, 'second_frame': second_frame};
+                       marker_data.push(row_data);
+                   }
+
+                   return marker_data;
+               }
+
+               const displayMainScreenComponents = [frame_player_background, control_group_rectangle, movie_image, button_play, button_next, button_previous, mark_rectangle, instruction_text, mark_event_button, completed_text, ready_button, slider, toggle_marker_mode_button, review_instructions_button];
+               let movie_player_time = 0;
+               function displayEventMarking(){
+                   let k = w.keysPressed;
+                   w.clearKeyboardBuffer();
+
+                   if (experimentData.movieIsPlaying){
+
+                       if (k.has("Space"))
+                           mark_event_button.doClick();
+
+                       let t = new Date().getTime();
+                       if (t - movie_player_time > 100) {
+                           movie_player_time = t;
+                           if (experimentData.currentImageFrame < movie_parameters[REQUESTED_MOVIE].max_images - 1)
+                               experimentData.currentImageFrame++;
+                           else
+                               button_play.doClick();
+
+                           movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
+                           slider.value = experimentData.currentImageFrame / (movie_parameters[REQUESTED_MOVIE].max_images-1);
+                       }
+                   } else {
+                       if (k.has("Space"))
+                           mark_event_button.doClick();
+                       if (k.has("ArrowLeft"))
+                           button_previous.doClick();
+                       if (k.has("ArrowRight"))
+                           button_next.doClick();
+                   }
+
+                   Window.clear();
+                   displayMainScreenComponents.forEach(item => item.draw());
+                   globalID = window.requestAnimationFrame(currentDisplayFunction);
+               }
+
+               ready_button.mouseClickedCallback = function(){
+                   if(ready_button._btnText._text === 'Ready!'){
+                       if(!w.isFullScreen) w.toggleFullscreen();
+                        completeEventMarking();
+                        enableEventMarkingControls(false);
+                        experimentData.currentPhase = "debriefing";
+                        initiateInstructionScreen("instructions_4");
+                        window.cancelAnimationFrame(globalID);
+                        currentDisplayFunction = displayInstructionScreen;
+                        window.requestAnimationFrame(currentDisplayFunction); 
+                        appState = 10;
+                   } else {
+                       
+                       w.toggleFullscreen();
+                       ready_button.enabled = validateMinimumRequirement();
+                       ready_button.text = 'Ready!';
+                   }
+                   
+               };
+               /*************************************************
+                * Start image loading and run the experiment
+                *************************************************/
+               initializeRequirementsScreen();
+               currentDisplayFunction = displayRequirementsScreen;
+               globalID = window.requestAnimationFrame(currentDisplayFunction);
+    </script>
+  </body>
+</html>
