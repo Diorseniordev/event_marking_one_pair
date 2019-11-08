@@ -27,14 +27,21 @@ tempSlideList = []
 def updateReady(id):
 
     eventList = [line.rstrip('\n') for line in open(
-        "%s_event_marking.log" % (id))]
+        "%s_event_marking.txt" % (id))]
     lineList = [line.rstrip('\n') for line in open(
-        "%s_slideshow_2.log" % (id))]
+        "%s_slideshow_2.txt" % (id))]
     for item in eventList[1:]:
         item = item.split('\t')
         tempEventList.append(item)
     for item in lineList:
         item = item.split('\t')
+
+        if len(item) == 5:
+            item.append('-1')
+            item.append('-1')
+            item.append('-1')
+            item.append('-1')
+
         tempSlideList.append(item)
 
     updateStatus(id)
@@ -42,69 +49,44 @@ def updateReady(id):
 
 def updateStatus(id):
 
-    frame = -4
+    frame = -5
 
-    f = open("%s_slideshow_2.log" % (id), "w")
+    f = open("%s_slideshow_2.txt" % (id), "w")
     # print("%s_slideshow_2.log" % (id))
     for item in tempSlideList:
         frame += 1
-        if item[len(item)-1] == '0' and frame > 0:
+        if item[4] == '1' and frame > 0:
 
-            item[4] = checkMarking(frame)
+            item[5], item[6], item[7], item[8] = checkMarking(frame)
         f.write("\t".join(str(x)
                           for x in item) + "\n")
-
     f.close()
 
 
 def checkMarking(num):
-    flag = 0
+    scount = 0
+    ecount = 0
+    mcount = 0
+    avglen = 0
     for item in tempEventList:
+
         startf = int(item[4])
         endf = int(item[5])
-        # only marked in start: 1
-        # only marked in end: 2
-        # only marked between start and end: 3
-        # marked in start and end: 5
-        # marked in start and between pair: 6
-        # marked in end and between pari: 7
-        # marked in start, end, between pair: 8
-        # not marked: 4
-        #
-        if flag == 0:
-            if num == startf:
-                flag = 1
-            elif num == endf:
-                flag = 2
-            elif num < endf and num > startf:
-                flag = 3
-        elif flag == 1:
-            if num == endf:
-                flag = 5
-            elif num < endf and num > startf:
-                flag = 6
-        elif flag == 2:
-            if num == startf:
-                flag = 5
-            elif num < endf and num > startf:
-                flag = 7
-        elif flag == 3:
-            if num == startf:
-                flag = 6
-            elif num == endf:
-                flag = 7
-        elif flag == 5:
-            if num < endf and num > startf:
-                flag = 8
-        elif flag == 6:
-            if num == endf:
-                flag = 8
-        elif flag == 7:
-            if num == startf:
-                flag = 8
-    if flag == 0:
-        flag = 4
-    return flag
+        # if frame appears in start point increase scount by 1
+        # if frame appears in end point increase ecount by 1
+        # if frame appears between start and end point increase mcount by 1
 
-
-# updateReady("A3242352352352")
+        if num == startf:
+            scount += 1
+            avglen += endf - startf + 1
+        if num == endf:
+            ecount += 1
+            avglen += endf - startf + 1
+        if num < endf and num > startf:
+            mcount += 1
+            avglen += endf - startf + 1
+    if scount + mcount + ecount != 0:
+        avglen = '%.4f' % (float(avglen) / (scount + mcount + ecount))
+    else:
+        avglen = '0.0000'
+    return scount, ecount, mcount, avglen
