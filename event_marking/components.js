@@ -106,12 +106,12 @@ class Window{
             e.preventDefault();
         this._keyboardBuffer.add(e.code);
      
-        console.log(this._keyboardBuffer);
+        //console.log(this._keyboardBuffer);
     }
 
     onKeyUpEvent(e){
         this._keyboardBuffer.delete(e.code);
-        console.log(this._keyboardBuffer);
+        //console.log(this._keyboardBuffer);
     }
 
     static onMouseMoveEvent(e){
