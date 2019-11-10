@@ -26,7 +26,9 @@
                /**************************
                 * Define global variables
                 *************************/
-               const REQUESTED_MOVIE = "mouse_frames_24";
+                let REAL_MOVIE = "baby_frames_24";
+                let PRACTICE_MOVIE = "yak_frames_24";
+                let REQUESTED_MOVIE = REAL_MOVIE;
 
                let experimentData = {
                    dataURL            : 'cgi/test.py',  											// The location to which data should be sent
@@ -39,21 +41,21 @@
                    currentMarkerPair  : [],
                    eventMarkerPairs   : [],
                    currentPhase       : 'slideshow_1',
-                   currentMovie       : 'yak_frames_24',
+                   currentMovie       : PRACTICE_MOVIE,
                    slideshow_data     : [],
                    recollection_data  : [],
                    event_marking_data : [],
-                   bslideshow1        : 0,
-                   bslideshow2        : 0 
+                   bslideshow1        : 1,
+                   bslideshow2        : 1 
                };
                let appState = 0;
                
                const movie_parameters = {
                    ape_frames_24 :           { max_images : 4, image_size: [640, 360]}, //151
-                   baby_frames_24 :          { max_images : 4, image_size: [360, 360]},  //453
+                   baby_frames_24 :          { max_images : 6, image_size: [360, 360]},  //453
                    goodfellas_frames_24 :    { max_images : 4, image_size: [640,360]},   //195
-                   yak_frames_24 : 		  { max_images : 10, image_size:  [640, 360]}, // 132 10
-                   mouse_frames_24 :         { max_images : 10, image_size: [640, 360]} // 151 20
+                   yak_frames_24 : 		  { max_images : 6, image_size:  [640, 360]}, // 132 10
+                   mouse_frames_24 :         { max_images : 4, image_size: [640, 360]} // 151 20
                };
 
                const HOVER_COLOR = "rgb(50,50,50)";
@@ -61,7 +63,9 @@
                /*****************************************
                // Define Window
                 ****************************************/
-
+                let worker_id;
+                worker_id = window.location.hash.substring(1, window.location.hash.length );
+                experimentData.turkID = worker_id;
                let w = new Window("window", "rgb(0,0,0)", "rgb(0,0,0)");
                let globalID = null;
                let currentDisplayFunction = null;
@@ -277,18 +281,18 @@
                // Check if all requirements are met if a fullscreen change is detected
                w.onfullscreenchange = function(){
                    if (appState == 0) {requirements_ready_button.enabled= validateRequirements();}
-                   console.log(appState, w.isFullScreen);
+                   console.log(appState);
                    if(!w.isFullScreen){
                         switch (appState) {
                             case 1:
                                 loading_complete_button.text = 'Reenter Full Screen';
                             break;
                             case 2:
-                                console.log("phase 2")
+                                
                                 start_experiment_button.text = 'Reenter Full Screen';
                                 break;
                             case 3:
-                                experimentData.bslideshow1 = -1;
+                                experimentData.bslideshow1 = 0;
                                 recollection_complete_button.text = 'Reenter Full Screen';
                                 recollection_complete_button.enabled = true;
                                 break;
@@ -301,7 +305,7 @@
                                 start_experiment_button.text = 'Reenter Full Screen';
                                 break;
                             case 6:
-                                experimentData.bslideshow2 = -1;
+                                experimentData.bslideshow2 = 0;
                                 recollection_complete_button.text = 'Reenter Full Screen';
                                 recollection_complete_button.enabled = true;
                                 break;
@@ -318,6 +322,14 @@
                                 ready_button.enabled = true;
                                 break;
                             case 10:
+                                start_experiment_button.text = 'Reenter Full Screen';
+                                ready_button.enabled = false;
+                                break;
+                            case 11:
+                                ready_button.text = 'Reenter Full Screen';
+                                ready_button.enabled = true;
+                                break;
+                            case 12:
                                 start_experiment_button.text = 'Reenter Full Screen';
                                 break;
                             default:
@@ -416,11 +428,12 @@
                    imageLoader.enqueue('images/instructions_2.png','instructions_2');
                    imageLoader.enqueue('images/instructions_3.png','instructions_3');
                    imageLoader.enqueue('images/instructions_4.png','instructions_4');
+                   imageLoader.enqueue('images/instructions_5.png','instructions_5');
 
                    for (let i = 0; i < movie_parameters[REQUESTED_MOVIE]['max_images']; ++i)
                        imageLoader.enqueue('images/' + REQUESTED_MOVIE + '/' + (i*6).toString() + ".png", REQUESTED_MOVIE + i.toString());
-                   for (let i = 0; i < movie_parameters['yak_frames_24']['max_images']; ++i)
-                       imageLoader.enqueue('images/yak_frames_24/' + (i*6).toString() + '.png', 'yak_frames_24' + i.toString());
+                   for (let i = 0; i < movie_parameters[PRACTICE_MOVIE]['max_images']; ++i)
+                       imageLoader.enqueue('images/' + PRACTICE_MOVIE + '/' + (i*6).toString() + '.png', PRACTICE_MOVIE + i.toString());
                    imageLoader.processImageQueue();
                }
 
@@ -477,15 +490,14 @@
                // Define instruction screen components
                 let start_experiment_button = new Button({position:[0, -300], size: [230, 40], text: "Proceed", backgroundColor : "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)"});
                 let instruction_image = new ImageStim({image: null, position: [0, 0], size : [1024, 700]});
-                let worker_id;
+                
                 function initiateInstructionScreen(im){
                     
                     console.log(appState);
                     if(!w.isFullScreen) w.toggleFullscreen()
                     instruction_image.image = imageLoader.getImage(im);
                     start_experiment_button.enabled = true;
-                    worker_id = window.location.hash.substring(1, window.location.hash.length );
-                    experimentData.turkID = worker_id;
+                    
                     //console.log(experimentData);
                }
 
@@ -500,8 +512,9 @@
                }
 
                start_experiment_button.mouseClickedCallback = function(){
-                   console.log(start_experiment_button._btnText._text)
+                   //console.log(start_experiment_button._btnText._text)
                    if(start_experiment_button._btnText._text === 'Proceed'){
+                       console.log(experimentData.currentPhase);
                         completeInstructionScreen();
                         switch (experimentData.currentPhase){
                             case "slideshow_1":
@@ -528,20 +541,30 @@
                                 appState = 7;
                                 console.log(appState);
                                 break;
-                            case "event_marking":
-                                initiateEventMarking();
-                                currentDisplayFunction = displayEventMarking;
+                            case "event_marking_practice":
+                                initiateEventMarkingPractice();
+                                currentDisplayFunction = displayEventMarkingPractice;
                                 ready_button.text = 'Ready!'
                                 ready_button.enabled = validateMinimumRequirement();
                                 appState = 9;
                                 console.log(appState);
                                 break;
+                            case "event_marking":
+                            
+                                initiateEventMarking();
+                                currentDisplayFunction = displayEventMarking;
+                                ready_button.text = 'Ready!'
+                                ready_button.enabled = validateMinimumRequirement();
+                                appState = 11;
+                                console.log(appState);
+                                break;
                             case "debriefing":
-                                appState = 10;
+                                appState = 12;
                                 console.log(appState);
                                 if (w.isFullScreen){
                                     w.toggleFullscreen();
                                 }
+                                
                             default:
                                 console.log("Unrecognized event");
                                 window.location = window.document.referrer + '#return';
@@ -564,7 +587,7 @@
                let countdown_text   = new Text({text : "", position : [0, 160], color : TEXT_COLOR, font: "24px Arial"});
 
                function initiateSlideshowTask(){
-                   experimentData.currentMovie = (experimentData.currentPhase === "slideshow_1") ? "yak_frames_24" : REQUESTED_MOVIE;
+                   experimentData.currentMovie = (experimentData.currentPhase === "slideshow_1") ? PRACTICE_MOVIE : REQUESTED_MOVIE;
                    experimentData.currentImageFrame = -4;
 
                    w.clearKeyboardBuffer();
@@ -579,7 +602,10 @@
 
                    experimentData.slideshow_data = [];
                    for (let i = 0; i < movie_parameters[experimentData.currentMovie]['max_images'] + 4; ++i){
-                       experimentData.slideshow_data.push({'movie' : experimentData.currentMovie, 'frame' : i-4, 'requested_onset':null, 'onset_call' : null, 'rt': null, 'status':0});
+                       let filePath = "";
+                       if(i < 4) filePath = "NA";
+                       else filePath = experimentData.currentMovie + "/" + (i - 4) * 6 + ".png ";
+                       experimentData.slideshow_data.push({'filePath' : filePath, 'frame' : i-4, 'requested_onset':null, 'onset_call' : null, 'rt': null, 'fullscreen':0});
                    }
                }
 
@@ -587,25 +613,28 @@
                //  it is important to set movie_image to null, because this can be used in the event marking task to check if
                //  it is the first time that the task is viewed (and not a second time after reviewing instructions)
                function completeSlideshowTask(){
-                   let post_data = new PostData(experimentData.dataURL);
-                   post_data.post(JSON.stringify({'turkID' : experimentData.turkID, 'data_type' : experimentData.currentPhase, 'data_content': experimentData.slideshow_data}));
-
+                   
                    movie_image.image = null;
                    if (experimentData.currentPhase === "slideshow_1"){
                        appState = 4;
                        experimentData.currentPhase = "recollection_1"
                    } else if (experimentData.currentPhase === "slideshow_2"){
-                       appState = 7;
-                       experimentData.currentPhase = "recollection_2";
+                        let post_data = new PostData(experimentData.dataURL);
+                        post_data.post(JSON.stringify({'turkID' : experimentData.turkID, 'data_type' : experimentData.currentPhase, 'data_content': experimentData.slideshow_data}));
+                        
+                        appState = 7;
+                        experimentData.currentPhase = "recollection_2";
                    }
                }
 
                let space_was_pressed = false;
                function displaySlideshowTask(t){
                    // Process keyboard
+                   
                    if (experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset'] === null) {
-                       experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset'] = t;
-                       experimentData.slideshow_data[experimentData.currentImageFrame + 4]['onset_call']      = performance.now();
+                       experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset'] = t.toFixed(3);
+                       
+                       experimentData.slideshow_data[experimentData.currentImageFrame + 4]['onset_call']      = (performance.now()).toFixed(4);
                    }
 
                    let keys = w.keysPressed;
@@ -615,8 +644,8 @@
                        space_was_pressed = true;
                        let bflag;
                        experimentData.currentPhase == 'slideshow_1' ? bflag = experimentData.bslideshow1: bflag = experimentData.bslideshow2;
-                       experimentData.slideshow_data[experimentData.currentImageFrame+4]['rt'] = performance.now() - experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset'];
-                       experimentData.slideshow_data[experimentData.currentImageFrame+4]['status'] = bflag;
+                       experimentData.slideshow_data[experimentData.currentImageFrame+4]['rt'] = (performance.now() - experimentData.slideshow_data[experimentData.currentImageFrame + 4]['requested_onset']).toFixed(4);
+                       experimentData.slideshow_data[experimentData.currentImageFrame+4]['fullscreen'] = bflag;
                        
                        experimentData.currentImageFrame += 1;
 
@@ -624,6 +653,7 @@
                            countdown_text.text = (-experimentData.currentImageFrame).toString();
                        } else if (experimentData.currentImageFrame < movie_parameters[experimentData.currentMovie]['max_images']) {
                            movie_image.image = imageLoader.getImage(experimentData.currentMovie + experimentData.currentImageFrame.toString());
+                           
 
                        } else {
                            completeSlideshowTask();
@@ -679,12 +709,8 @@
 
                // Store data and update phase
                function completeEventRecollectionTask(){
-                   let post_data = new PostData(experimentData.dataURL);
-                   post_data.post(JSON.stringify({
-                       'turkID' : experimentData.turkID,
-                       'data_type' : experimentData.currentPhase,
-                       'data_content': {'recollection': recollection_input.text, 'movie': experimentData.currentMovie}
-                   }));
+                   
+                   
 
                    recollection_input.enabled = false;
                    if(recollection_complete_button._btnText._text == 'Ready!') recollection_complete_button.enabled = false;
@@ -692,7 +718,13 @@
                    if (experimentData.currentPhase === "recollection_1"){
                        experimentData.currentPhase = "slideshow_2";
                    } else if (experimentData.currentPhase === "recollection_2"){
-                       experimentData.currentPhase = "event_marking";
+                    let post_data = new PostData(experimentData.dataURL);
+                    post_data.post(JSON.stringify({
+                       'turkID' : experimentData.turkID,
+                       'data_type' : experimentData.currentPhase,
+                       'data_content': {'recollection': recollection_input.text, 'movie': experimentData.currentMovie}
+                    }));   
+                    experimentData.currentPhase = "event_marking_practice";
                    }
                }
 
@@ -743,6 +775,32 @@
                // This function gets called before the event marking screen is shown
                // The first time this happens (when movie_image.image == null), the slider and movie image are also configured
                function initiateEventMarking(){
+                  
+                    if(REQUESTED_MOVIE !== REAL_MOVIE){
+                        REQUESTED_MOVIE = REAL_MOVIE;
+                   
+                        experimentData.currentImageFrame = 0;
+                        experimentData.currentMarkerPair = [];
+                        experimentData.eventMarkerPairs = [];
+                        slider._bookmarks = {counter: 0, bookmarkDict : {}, drawList : []};
+                        
+                        movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
+                        movie_image.size  = movie_parameters[REQUESTED_MOVIE]['image_size'];
+                        slider.value = 0;
+                    
+                    }
+                   
+
+                   w.clearKeyboardBuffer();
+                   instruction_text.text = "Please indicate all of the events that happened. For each event, mark the start and end frames on the timeline."
+                   instruction_text.position = [0, -215];
+                   instruction_text.font = "18px Arial";
+                   enableEventMarkingControls(true);
+               }
+                // This function gets called before the event marking screen is shown
+               // The first time this happens (when movie_image.image == null), the slider and movie image are also configured
+               function initiateEventMarkingPractice(){
+                    REQUESTED_MOVIE = PRACTICE_MOVIE;
                    if (movie_image.image == null){
                        experimentData.currentImageFrame = 0;
                        movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
@@ -756,7 +814,6 @@
                    instruction_text.font = "18px Arial";
                    enableEventMarkingControls(true);
                }
-
                // Function that allows enabling or disabling (through v parameter), all the controls on the event marking screen
                function enableEventMarkingControls(v){
                    slider.enabled = v;
@@ -775,19 +832,35 @@
                // Function that gets called when the event marking task should be completed. It constructs a list with
                //  all the marked events, checks if sufficient events have been marked, and if so, posts the data.
                function completeEventMarking(){
-                   appState = 10;
-                   let marker_data = getMarkerData();
+                    if(experimentData.currentPhase == 'event_marking_practice') {
+                        
+                        appState = 10;
+                        ready_button.enabled = false;
+                        window.cancelAnimationFrame(globalID);
+                        currentDisplayFunction = displayInstructionScreen;
+                        globalID = window.requestAnimationFrame(currentDisplayFunction);
+                        // initiateEventMarking();
+                        // currentDisplayFunction = displayEventMarking;
+                        // ready_button.enabled = validateMinimumRequirement();
+                        experimentData.currentPhase = "event_marking";
+                    } else {
+                        appState = 12;
+                        
+                        let marker_data = getMarkerData();
 
-                   let post_data = new PostData(experimentData.dataURL);
-                   post_data.post(JSON.stringify({'turkID' : experimentData.turkID, 'data_type' : experimentData.currentPhase, 'data_content': marker_data}));
-                //    post_data = new PostData('cgi/modify.py');
-                //    post_data.post(JSON.stringify({'turkID' : experimentData.turkID}));
+                        let post_data = new PostData(experimentData.dataURL);
+                        console.log(marker_data);
+                        post_data.post(JSON.stringify({'turkID' : experimentData.turkID, 'data_type' : experimentData.currentPhase, 'data_content': marker_data}));
+                        
+                    }
+                
                    return true;
                }
 
                function validateMinimumRequirement(){
+                    
                    let marker_data = getMarkerData();
-
+                    
                    return marker_data.length >= experimentData.minEventsRequired && experimentData.currentMarkerPair.length != 1;
                }
 
@@ -800,10 +873,16 @@
                        let first = experimentData.eventMarkerPairs[i][0].id;
                        let second= experimentData.eventMarkerPairs[i][1].id;
 
-                       let first_frame  = Math.round(bookmarks[first].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
-                       let second_frame = Math.round(bookmarks[second].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
-
-                       let row_data = {'movie': experimentData.testMovie, 'trial' : (i+1), 'first_id' : first.toString(), 'second_id' : second.toString(), 'first_frame' : first_frame, 'second_frame': second_frame};
+                       let first_frame  = Math.ceil(bookmarks[first].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
+                       let second_frame = Math.ceil(bookmarks[second].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
+                        if(first_frame == 0) first_frame = 1;
+                        if(second_frame == 0) second_frame = 1;
+                        if(first_frame > second_frame) {
+                            let temp = first_frame;
+                            first_frame = second_frame;
+                            second_frame = temp;
+                        }
+                       let row_data = {'filePath': experimentData.testMovie + "/" + i * 6 + ".png", 'trial' : (i+1), 'first_id' : first.toString(), 'second_id' : second.toString(), 'first_frame' : first_frame, 'second_frame': second_frame};
                        marker_data.push(row_data);
                    }
 
@@ -845,21 +924,62 @@
                    displayMainScreenComponents.forEach(item => item.draw());
                    globalID = window.requestAnimationFrame(currentDisplayFunction);
                }
+               movie_player_time = 0;
+               function displayEventMarkingPractice(){
+                   let k = w.keysPressed;
+                   w.clearKeyboardBuffer();
 
+                   if (experimentData.movieIsPlaying){
+
+                       if (k.has("Space"))
+                           mark_event_button.doClick();
+
+                       let t = new Date().getTime();
+                       if (t - movie_player_time > 100) {
+                           movie_player_time = t;
+                           if (experimentData.currentImageFrame < movie_parameters[REQUESTED_MOVIE].max_images - 1)
+                               experimentData.currentImageFrame++;
+                           else
+                               button_play.doClick();
+
+                           movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
+                           slider.value = experimentData.currentImageFrame / (movie_parameters[REQUESTED_MOVIE].max_images-1);
+                       }
+                   } else {
+                       if (k.has("Space"))
+                           mark_event_button.doClick();
+                       if (k.has("ArrowLeft"))
+                           button_previous.doClick();
+                       if (k.has("ArrowRight"))
+                           button_next.doClick();
+                   }
+
+                   Window.clear();
+                   displayMainScreenComponents.forEach(item => item.draw());
+                   globalID = window.requestAnimationFrame(currentDisplayFunction);
+               }
                ready_button.mouseClickedCallback = function(){
                    if(ready_button._btnText._text === 'Ready!'){
                        if(!w.isFullScreen) w.toggleFullscreen();
-                        completeEventMarking();
-                        enableEventMarkingControls(false);
-                        experimentData.currentPhase = "debriefing";
-                        initiateInstructionScreen("instructions_4");
-                        window.cancelAnimationFrame(globalID);
-                        currentDisplayFunction = displayInstructionScreen;
-                        window.requestAnimationFrame(currentDisplayFunction); 
-                        appState = 10;
+                        if(experimentData.currentPhase === 'event_marking_practice'){
+                            
+                            completeEventMarking();    
+                            initiateInstructionScreen("instructions_4");
+                            
+                        } else {
+                            completeEventMarking();
+                            enableEventMarkingControls(false);
+                            experimentData.currentPhase = "debriefing";
+                            initiateInstructionScreen("instructions_5");
+                            window.cancelAnimationFrame(globalID);
+                            currentDisplayFunction = displayInstructionScreen;
+                            window.requestAnimationFrame(currentDisplayFunction); 
+                        }
+                        
                    } else {
-                       
+                       console.log("what is error");
                        w.toggleFullscreen();
+                       console.log("safe here?");
                        ready_button.enabled = validateMinimumRequirement();
                        ready_button.text = 'Ready!';
                    }

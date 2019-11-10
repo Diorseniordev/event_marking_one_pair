@@ -69,7 +69,8 @@ function gradePQs() {
   }
 
   if (formIncomplete > 0) {
-    pop("popDiv1");
+    //pop("popDiv1");
+    alertMX("Please choose correct answer.");
   } else if (formIncomplete == 0 && videoOk == 1) {
     $("#playButton").hide();
     $("#instructions1").hide();
@@ -88,6 +89,9 @@ function gradePQs() {
 }
 
 function EM_onready() {
+  for (let i = 18; i < 100; i++) {
+    $("#age_selector").append("<option value='" + i + "'>" + i + "</option>");
+  }
   if (window.location.hash == "#return") {
     window.location.hash = "";
 
@@ -331,7 +335,10 @@ function do_instructions5a_validate_input() {
     worker_id = user_input_worker_id;
     do_instructions5b();
   } else {
-    pop("popDiv2");
+    //pop("popDiv2");
+    alertMX(
+      "It looks like you put in something that is not a valid format for an M-Turk worker ID! Please try again. If you believe you have reached this message in error, please email."
+    );
   }
 }
 
@@ -385,7 +392,8 @@ function validate_demographics() {
   age_val = $("#age_selector").val();
 
   if (gender_val == "SexEmpty" || age_val == "AgeEmpty") {
-    pop("popDiv1");
+    //pop("popDiv1");
+    alertMX("Please select age and gender");
   } else {
     do_instructions6();
   }
@@ -547,7 +555,10 @@ function gradeDebriefingQuestions() {
   }
 
   if (formIncomplete > 0 || lengthstrict > 0) {
-    pop("popDiv1");
+    //pop("popDiv1");
+    alertMX(
+      "Please answer all questions on this page, typing at least 20 characters per question"
+    );
   } else {
     completion_code = generate_completion_code();
     $(debriefing_questionairre_div_id).hide();
@@ -826,4 +837,22 @@ function determine_condition_callback(check_status) {
     alert("Abort: experiment sample reached!");
   }
   console.log(condition);
+}
+$(
+  "<style type='text/css'>#boxMX{display:none;background: #fff;padding: 10px;border: 2px solid #ddd;float: left;font-size: 1.2em;position: fixed;top: 50%; left: 50%;z-index: 99999;box-shadow: 0px 0px 20px #999; -moz-box-shadow: 0px 0px 20px #999; -webkit-box-shadow: 0px 0px 20px #999; border-radius:6px 6px 6px 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; font:13px Arial, Helvetica, sans-serif; padding:6px 6px 4px;width:300px; color: white;}</style>"
+).appendTo("head");
+
+function alertMX(t) {
+  $("body").append(
+    $("<div id='boxMX'><p class='msgMX'></p><p>CLOSE</p></div>")
+  );
+  $(".msgMX").text(t);
+  var popMargTop = ($("#boxMX").height() + 24) / 2,
+    popMargLeft = ($("#boxMX").width() + 24) / 2;
+  $("#boxMX")
+    .css({ "margin-top": -popMargTop, "margin-left": -popMargLeft })
+    .fadeIn(600);
+  $("#boxMX").click(function() {
+    $(this).remove();
+  });
 }
