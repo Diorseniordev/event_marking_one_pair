@@ -1,111 +1,135 @@
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>Perception Experiment</title>
-    <style>
-     
-    </style>      
+    <style></style>
 
-
-    <link rel="stylesheet" type="text/css" href="EM.css">
+    <link rel="stylesheet" type="text/css" href="EM.css" />
     <script
-			  src="https://code.jquery.com/jquery-1.10.2.min.js"
-			  integrity="sha256-C6CB9UYIS9UJeqinPHWTHVqh/E1uhG5Twh+Y5qFQmYg="
-			  crossorigin="anonymous"></script>
-    <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?1.29.1"></script>
-    <script type='text/javascript' src="necessary_functions.js"></script>
-    <script type='text/javascript' src="pace.min.js"> pace.start(); </script>
+      src="https://code.jquery.com/jquery-1.10.2.min.js"
+      integrity="sha256-C6CB9UYIS9UJeqinPHWTHVqh/E1uhG5Twh+Y5qFQmYg="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      type="text/javascript"
+      src="http://mbostock.github.com/d3/d3.js?1.29.1"
+    ></script>
+
+    <script type="text/javascript" src="pace.min.js">
+      pace.start();
+    </script>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/seedrandom.min.js"></script>
     <script>
-          function play() {
-                document.getElementById("padded").play();
-                document.getElementById("playButton").innerHTML = "X";
-                document.getElementById("playButton").onclick = "";
-              } 
+      function play() {
+        document.getElementById("padded").play();
+        document.getElementById("playButton").innerHTML = "X";
+        document.getElementById("playButton").onclick = "";
+      }
     </script>
-
-    
 
     <script src="EM.js"></script>
   </head>
   <body style="background-color: white;">
-  
-    <center> 
+    <center>
+      <br />
 
-      <br>
+      <p
+        id="instructions1"
+        style="display:none;color:black;text-align:center; font-size: 100%;margin: 0 auto; width: 55em;"
+      >
+        <br /><b>Browser Check </b> <br /><br />Press play to view the test
+        animation, then answer the question below.<br /><br />
+      </p>
 
-      <p id="instructions1"style="display:none;color:black;text-align:center; font-size: 100%;margin: 0 auto; width: 55em;">
-      <br><b>Browser Check </b> <br><br>Press play to view the test animation, then answer the question below.<br><br></p> 
-
-      <button id="playButton" style="color:black; background:lightgray; font-size: 100%;margin: 0 auto; margin-top:1em;" onclick="play()">Play</button><br>
+      <button
+        id="playButton"
+        style="color:black; background:lightgray; font-size: 100%;margin: 0 auto; margin-top:1em;"
+        onclick="play()"
+      >
+        Play</button
+      ><br />
       <div id="video_container" class="video_container">
         <video id="padded" width="360" height="360" preload="auto">
-          <source src="padded.mp4" type="video/mp4">
+          <source src="padded.mp4" type="video/mp4" />
         </video>
-        <br>
+        <br />
       </div>
 
-
-      <div id="BrowserCheck_div"style="color:black;text-align:center; font-size: 100%;margin: 0 auto; width: 55em;margin-top:1em;">
-        <b>Which of the following best describes the animation you just viewed? </b><br>
-        <br>
+      <div
+        id="BrowserCheck_div"
+        style="color:black;text-align:center; font-size: 100%;margin: 0 auto; width: 55em;margin-top:1em;"
+      >
+        <b
+          >Which of the following best describes the animation you just viewed? </b
+        ><br />
+        <br />
 
         <center>
           <form name="BrowserCheck" id="Browser_Check" action="">
             <table border="1" cellpadding="7" cellspacing="0">
               <tr>
                 <td>
-                <input name="pq1" type="radio" value="CylSmooth" />
+                  <input name="pq1" type="radio" value="CylSmooth" />
                   A cylinder rotating smoothly |
-                <input name="pq1" type="radio" value="CylPause" />
+                  <input name="pq1" type="radio" value="CylPause" />
                   A cylinder rotating with pauses |
-                <input name="pq1" type="radio" value="Hippo" />
-                  A dancing hippopotamus<br>      
-                <input name="pq1" type="radio" value="CubeSmooth" />
+                  <input name="pq1" type="radio" value="Hippo" />
+                  A dancing hippopotamus<br />
+                  <input name="pq1" type="radio" value="CubeSmooth" />
                   A cube rotating smoothy |
-                <input name="pq1" type="radio" value="CubePause" />
+                  <input name="pq1" type="radio" value="CubePause" />
                   A cube rotating with pauses |
-                <input name="pq1" type="radio" value="None" />
+                  <input name="pq1" type="radio" value="None" />
                   I couldn't view the animation
-                </td>            
-                </tr>
+                </td>
+              </tr>
             </table>
-            <br/>
 
-            <input name="submit" type="button" onClick="gradePQs()" style="color:black; background:lightgray; font-size: 100%;margin: 0 auto; margin-top:1em;" value="Submit">
+            <br />
 
+            <input
+              name="submit"
+              type="button"
+              onClick="gradePQs()"
+              style="color:black; background:lightgray; font-size: 100%;margin: 0 auto; margin-top:1em;"
+              value="Submit"
+            />
           </form>
         </center>
-      </div>  
+      </div>
+    </center>
 
-    </center> 
-
-    
-<!-- Main js script goes in a separate document -->
+    <!-- Main js script goes in a separate document -->
 
     <div id="instructions_bg">&nbsp;</div>
     <div id="instructions">&nbsp;</div>
     <div id="nextbutton">NEXT</div>
     <div id="backbutton">BACK</div>
-    <div id="winresized">It looks like the window was resized during the previous trial!<br><br>Unfortunately, resizing your window disrupts the task and invalidates your results.<br><br>If you believe you have reached this message in error, please email the experimenter.<br><br>You can also try the HIT again, but you will have to start over at the beginning. If you don't want to do that, please return the HIT.</div>
-    <div id="mobilebrowser">It looks like you're trying to acess this HIT from a mobile device or tablet!<br><br>Unfortunately, this HIT can only be completed from a laptop/desktop computer. Please try again from there, or else return the HIT.<br><br>If you believe you have reached this message in error, please email</div>
-    
+
+    <div id="mobilebrowser">
+      It looks like you're trying to acess this HIT from a mobile device or
+      tablet!<br /><br />Unfortunately, this HIT can only be completed from a
+      laptop/desktop computer. Please try again from there, or else return the
+      HIT.<br /><br />If you believe you have reached this message in error,
+      please email
+    </div>
+
     <div id="demographics_survey_div">
-      <b>Demographics Questionnaire</b><br><br>
-        This is standard demographic information used primarily in grant reporting. If you do not wish to provide your sex/gender, simply select the "Other" option.
-      <br><br>
+      <b>Demographics Questionnaire</b><br /><br />
+      This is standard demographic information used primarily in grant
+      reporting. If you do not wish to provide your sex/gender, simply select
+      the "Other" option.
+      <br /><br />
 
       <form name="demographics_form" id="demographics_form" action="">
-
-      <label>What is your age?</label>
+        <label>What is your age?</label>
         <select id="age_selector">
           <option value="AgeEmpty"></option>
-          
         </select>
-        <br>
-        <br>
+        <br />
+        <br />
 
         <label>What is your sex/gender?</label>
         <select id="gender_selector">
@@ -113,66 +137,147 @@
           <option value="Male">Male</option>
           <option value="Female">Female</option>
           <option value="NoSex">Other</option>
-          <option value="NoSex">Prefer Not to Answer</option>
-        </select><br><br>
-          
+          <option value="NoSex">Prefer Not to Answer</option> </select
+        ><br /><br />
       </form>
     </div>
 
     <div class="demo_popup" id="demographics_sex_popup">
-        If you do not wish to provide this information, feel free to select "prefer not to answer" in the dropdown menu.
+      If you do not wish to provide this information, feel free to select
+      "prefer not to answer" in the dropdown menu.
     </div>
 
     <div class="demo_popup" id="demographics_age_popup">
-        Your age, in years. If you are under age 18, unfortunately you are not eligibile to participate in this experiment.
+      Your age, in years. If you are under age 18, unfortunately you are not
+      eligibile to participate in this experiment.
     </div>
 
-  </div>
+    <div
+      id="debriefing_questionairre_div"
+      style="display:none;color:black;text-align:justify; font-size: 100%;margin: 0 auto; width: 75em;margin-top:1em;"
+    >
+      <br /><b>Follow-up Questions </b><br /><br />
+      <b>
+        You're almost done! Please answer these follow-up questions to help us
+        improve the experiment.</b
+      ><br />
+      <br />
 
-  <div id="debriefing_questionairre_div"style="display:none;color:black;text-align:justify; font-size: 100%;margin: 0 auto; width: 75em;margin-top:1em;">
-    <br><b>Follow-up Questions </b><br><br>
-    <b> You're almost done!  Please answer these follow-up questions to help us improve the experiment.</b><br>
-      <br>
+      <form
+        name="debriefing_questionairre_form"
+        id="debriefing_questionairre_form"
+        action=""
+        display
+      >
+        <table border="1" cellpadding="8" cellspacing="0">
+          <tr>
+            <td>
+              <b
+                >Did you understand the task and perform it carefully? Your
+                payment doesn't depend on your answer.</b
+              >
+            </td>
+            <td>
+              <input name="dq1" type="radio" value="Yes" />
+              Yes |
+              <input name="dq1" type="radio" value="No" />
+              No
+            </td>
+          </tr>
+        </table>
 
-    <form name="debriefing_questionairre_form" id="debriefing_questionairre_form" action="" display>
-      <table border="1" cellpadding="8" cellspacing="0">
-        <tr>
-          <td><b>Did you understand the task and perform it carefully? Your payment doesn't depend on your answer.</b></td>
-          <td><input name="dq1" type="radio" value="Yes" />
-          Yes | 
-          <input name="dq1" type="radio" value="No" />
-          No  
-        </tr>
-      </table>
+        <br /><b
+          >In 1-3 sentences, please summarize the instructions that you were
+          given in the two tasks.</b
+        ><br /><br />
 
-      <br><b>In 1-3 sentences, please summarize the instructions that you were given in the two tasks.</b><br><br>
+        <textarea
+          id="dq2"
+          minlength="15"
+          type="text"
+          cols="180"
+          rows="4"
+          name="comment"
+        ></textarea>
+        <br /><br />
 
-      <textarea id="dq2" minlength="15" type="text" cols="180" rows="4" name="comment"></textarea> <br/><br>
+        <br /><b
+          >Were the instructions clear enough? If not, what part(s) were
+          unclear?</b
+        ><br /><br />
 
-      <br><b>Were the instructions clear enough?  If not, what part(s) were unclear?</b><br><br>
+        <textarea
+          id="dq3"
+          minlength="1"
+          type="text"
+          cols="180"
+          rows="4"
+          name="comment"
+        ></textarea>
+        <br /><br />
 
-      <textarea id="dq3" minlength="1" type="text" cols="180" rows="4" name="comment"></textarea> <br/><br>
+        <br /><b
+          >Had you ever heard of an experiment like this before? If so, please
+          describe it in a just a few words.</b
+        ><br /><br />
 
-      <br><b>Had you ever heard of an experiment like this before?  If so, please describe it in a just a few words.</b><br><br>
+        <textarea
+          id="dq4"
+          minlength="1"
+          type="text"
+          cols="180"
+          rows="4"
+          name="comment"
+        ></textarea>
+        <br /><br />
 
-      <textarea id="dq4" minlength="1" type="text" cols="180" rows="4" name="comment"></textarea> <br/><br>
+        <br /><b>Were there any problems with the display?</b><br /><br />
 
-      <br><b>Were there any problems with the display?</b><br><br>
+        <textarea
+          id="dq5"
+          minlength="1"
+          type="text"
+          cols="180"
+          rows="4"
+          name="comment"
+        ></textarea>
+        <br /><br />
 
-      <textarea id="dq5" minlength="1" type="text" cols="180" rows="4" name="comment"></textarea> <br/><br>
+        <br /><b>How well do you think you did?</b><br /><br />
 
-      <br><b>How well do you think you did?</b><br><br>
+        <textarea
+          id="dq6"
+          minlength="1"
+          type="text"
+          cols="180"
+          rows="4"
+          name="comment"
+        ></textarea>
+        <br /><br />
 
-      <textarea id="dq6" minlength="1" type="text" cols="180" rows="4" name="comment"></textarea> <br/><br>
+        <br /><b>How did you choose the responses you gave in the last task?</b
+        ><br /><br />
 
-      <br><b>How did you choose the responses you gave in the last task?</b><br><br>
+        <textarea
+          id="dq7"
+          minlength="1"
+          type="text"
+          cols="180"
+          rows="4"
+          name="comment"
+        ></textarea>
+        <br /><br /><br />
 
-      <textarea id="dq7" minlength="1" type="text" cols="180" rows="4" name="comment"></textarea> <br/><br><br>
-
-      <input name="submit3" type="button" button id="playButton" style="color:black; background:lightgray; font-size: 100%;margin: 0 auto; margin-top:1em;"  onClick="gradeDebriefingQuestions()" value="Submit" /><br><br><br>
-    </form>
-
-  </div>
-
+        <input
+          name="submit3"
+          type="button"
+          button
+          id="playButton"
+          style="color:black; background:lightgray; font-size: 100%;margin: 0 auto; margin-top:1em;"
+          onClick="gradeDebriefingQuestions()"
+          value="Submit"
+        /><br /><br /><br />
+      </form>
+    </div>
   </body>
 </html>

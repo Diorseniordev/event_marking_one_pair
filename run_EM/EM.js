@@ -565,29 +565,29 @@ function gradeDebriefingQuestions() {
     worker_id = localStorage.getItem("workerid");
     gender_val = localStorage.getItem("gender");
     age_val = localStorage.getItem("age_val");
-    console.log(
-      worker_id,
-      gender_val,
-      age_val,
-      win_resize_trial_invalid,
-      total_time_elapsed,
-      condition,
-      which_quarter,
-      motion_toward_me,
-      match_side,
-      overall_flip,
-      response,
-      RT,
+    // console.log(
+    //   worker_id,
+    //   gender_val,
+    //   age_val,
+    //   win_resize_trial_invalid,
+    //   total_time_elapsed,
+    //   condition,
+    //   which_quarter,
+    //   motion_toward_me,
+    //   match_side,
+    //   overall_flip,
+    //   response,
+    //   RT,
 
-      switchedWindows,
-      dq2_text,
-      dq3_text,
-      dq4_text,
-      dq5_text,
-      dq6_text,
-      dq7_text,
-      completion_code
-    );
+    //   switchedWindows,
+    //   dq2_text,
+    //   dq3_text,
+    //   dq4_text,
+    //   dq5_text,
+    //   dq6_text,
+    //   dq7_text,
+    //   completion_code
+    // );
     show_cursor();
     total_time_elapsed = Date.now() - start_stamp;
 
@@ -753,7 +753,7 @@ function check_worker_id_callback(check_status) {
   else if (check_status == "unused") worker_id_used_before = 0;
   else if (check_status == "error") worker_id_used_before = -2;
   else worker_id_used_before = -1;
-  console.log(worker_id_used_before);
+  // console.log(worker_id_used_before);
 }
 
 // BELOW COURTESY OF GARY LUPYAN -- COPIED FROM
@@ -767,30 +767,6 @@ function getParamFromURL(name) {
   else return results[1];
 }
 
-function shuffle(o) {
-  for (
-    var j, x, i = o.length;
-    i;
-    j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x
-  );
-  return o;
-}
-
-function startTimer() {
-  if (seconds < 0) {
-    clearInterval(timer);
-  } else {
-    seconds--;
-  }
-}
-function sleep(milliseconds) {
-  var start = new Date().getTime();
-  for (var i = 0; i < 1e7; i++) {
-    if (new Date().getTime() - start > milliseconds) {
-      break;
-    }
-  }
-}
 function do_failedBrowserCheck() {
   $(instructions_id).html(
     "<b>Invalid Browser!</b><br><br>" +
@@ -830,9 +806,6 @@ function determine_condition_callback(check_status) {
   }
   console.log(condition);
 }
-$(
-  "<style type='text/css'>#boxMX{display:none;background: #fff;padding: 10px;border: 2px solid #ddd;float: left;font-size: 1.2em;position: fixed;top: 50%; left: 50%;z-index: 99999;box-shadow: 0px 0px 20px #999; -moz-box-shadow: 0px 0px 20px #999; -webkit-box-shadow: 0px 0px 20px #999; border-radius:6px 6px 6px 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; font:13px Arial, Helvetica, sans-serif; padding:6px 6px 4px;width:300px; color: white;}</style>"
-).appendTo("head");
 
 function alertMX(t) {
   $("body").append(
