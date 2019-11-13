@@ -4,43 +4,7 @@
     <meta charset="utf-8">
     <title>Perception Experiment</title>
     <style>
-      .ontop {
-        z-index: 999;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        display: none;
-        position: fixed;       
-        background-color: #cccccc;
-        color: #aaaaaa;
-        opacity: .9;
-        filter: alpha(opacity = 95);
-      }
-
-      #popup1 {
-        width: 300px;
-        height: 200px;
-        position: fixed;
-        color: #FF0000;
-        background-color: #ffffff;
-        top: 50%;
-        left: 50%;
-        margin-top: -100px;
-        margin-left: -150px;
-      }
-
-      #popup2 {
-        width: 300px;
-        height: 200px;
-        position: fixed;
-        color: #FF0000;
-        background-color: #ffffff;
-        top: 50%;
-        left: 50%;
-        margin-top: -100px;
-        margin-left: -150px;
-      }
+     
     </style>      
 
 
@@ -54,24 +18,6 @@
     <script type='text/javascript' src="pace.min.js"> pace.start(); </script>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/seedrandom.min.js"></script>
-
-    <script type="text/javascript">
-      function pop(div) {
-        document.getElementById(div).style.display = 'block';
-      }
-      function hide(div) {
-        document.getElementById(div).style.display = 'none';
-      }
-      //To detect escape button
-      document.onkeydown = function(evt) {
-        evt = evt || window.event;
-        if (evt.keyCode == 27) {
-          hide('popDiv1');
-          hide('popDiv2');
-        }
-      };
-    </script>
-
     <script>
           function play() {
                 document.getElementById("padded").play();
@@ -85,10 +31,6 @@
     <script src="EM.js"></script>
   </head>
   <body style="background-color: white;">
-  
-    <div type="hidden" class="output">
-      <p id="totalPageTime">  </p>
-    </div>
   
     <center> 
 
@@ -140,9 +82,7 @@
 
     </center> 
 
-    <div type="hidden" class="output">
-      <p id="totalPageTime">  </p>
-    </div>
+    
 <!-- Main js script goes in a separate document -->
 
     <div id="instructions_bg">&nbsp;</div>

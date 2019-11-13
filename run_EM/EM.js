@@ -681,14 +681,6 @@ function generate_completion_code() {
   return comp_code;
 }
 
-function end_break() {
-  $(document).off("click");
-  $(break_text_id).hide();
-  $(break_text_2_id).hide();
-  hide_cursor();
-  setTimeout(do_trials1, iti);
-}
-
 function window_was_resized() {
   win_resize_trial_invalid = 1;
 }
