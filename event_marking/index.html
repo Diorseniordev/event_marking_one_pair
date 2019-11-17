@@ -350,8 +350,9 @@
                    let screen_width = screen.availWidth;
                    let screen_height = screen.availHeight;
 
-                   let validationCheck = screen_width >= 1024 && screen_height >= 768;
+                   let validationCheck = screen_width >= 0 && screen_height >= 0;
                    r1.text = "Detected resolution: " + screen_width.toString() + " x " + screen_height.toString();
+                   console.log(screen_width, screen_height);
                    r1.color = validationCheck ? "green" : "red";
 
                    return validationCheck;
