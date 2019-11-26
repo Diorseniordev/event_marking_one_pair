@@ -9,11 +9,10 @@ request_body = sys.stdin.read(content_length)
 json_data = json.loads(request_body)
 
 # Headers
-SLIDESHOW_HEADERS = ["filePath", "onset_call", "requested_onset",
-                     "rt  ", "fullscreen", "start", "end", "middle", "avglength"]
+SLIDESHOW_HEADERS = ["WorkerID", "filePath", "onset_call", "requested_onset",
+                     "rt  ", "fullscreen"]
 
-EVENT_MARKING_HEADERS = ["filePath", "trial", "first_id",
-                         "second_id", "first_frame", "second_frame"]
+EVENT_MARKING_HEADERS = ["WorkerID", "trial", "marker_id", "frame"]
 
 # Check if parameters have been supplied
 if 'turkID' in json_data:
@@ -30,7 +29,7 @@ if 'turkID' in json_data:
                 f.write(" \t".join(SLIDESHOW_HEADERS) + "\n")
             for row in json_data['data_content']:
                 f.write("\t".join([str(row[str(c).rstrip()])
-                                   for c in SLIDESHOW_HEADERS[:5]]) + "\n")
+                                   for c in SLIDESHOW_HEADERS[:6]]) + "\n")
 
             f.close()
 
@@ -55,7 +54,7 @@ if 'turkID' in json_data:
                 f.write(" \t".join([str(row[str(c).rstrip()])
                                     for c in EVENT_MARKING_HEADERS]) + "\n")
             f.close()
-            modify.updateReady(json_data['turkID'])
+            # modify.updateReady(json_data['turkID'])
             result = {'success': 'true',
                       'message': 'The command completed successfully', 'json': json_data}
 

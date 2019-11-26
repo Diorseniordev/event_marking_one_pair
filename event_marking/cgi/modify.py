@@ -36,7 +36,7 @@ def updateReady(id):
     for item in lineList:
         item = item.split('\t')
 
-        if len(item) == 5:
+        if len(item) == 6:
             item.append('-1')
             item.append('-1')
             item.append('-1')
@@ -55,9 +55,9 @@ def updateStatus(id):
     # print("%s_slideshow_2.log" % (id))
     for item in tempSlideList:
         frame += 1
-        if item[4] == '1' and frame > 0:
+        if item[5] == '1' and frame > 0:
 
-            item[5], item[6], item[7], item[8] = checkMarking(frame)
+            item[6], item[7], item[8], item[9] = checkMarking(frame)
         f.write("\t".join(str(x)
                           for x in item) + "\n")
     f.close()

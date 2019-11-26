@@ -38,8 +38,8 @@
                    movieIsPlaying     : false,
                    currentImageFrame  : 0,
                    markerMode         : 'add',
-                   currentMarkerPair  : [],
-                   eventMarkerPairs   : [],
+                   currentMarker  : {},
+                   eventMarkers   : [],
                    currentPhase       : 'slideshow_1',
                    currentMovie       : PRACTICE_MOVIE,
                    slideshow_data     : [],
@@ -84,7 +84,7 @@
                let button_next = new Button({position:[95, -100], size: [40, 40], text: ">>", backgroundColor : "black", mouseHoverColor : HOVER_COLOR});
                let button_previous = new Button({position: [-95, -100], size: [40, 40], text: "<<", backgroundColor : "black", mouseHoverColor : HOVER_COLOR});
 
-               let mark_event_button = new Button({position: [0, -160], size: [230,50], text:"Mark event start", backgroundColor : "rgb(70, 70, 130)", mouseHoverColor : "rgb(70, 70, 150)"});
+               let mark_event_button = new Button({position: [0, -160], size: [230,50], text:"Mark event", backgroundColor : "rgb(70, 70, 130)", mouseHoverColor : "rgb(70, 70, 150)"});
                let toggle_marker_mode_button = new Button({position: [300, -320], size: [200, 40], text: "Enable eraser", backgroundColor: "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)", font : "16px Arial"});
                let review_instructions_button= new Button({position: [-300, -320], size: [200, 40], text: "Review instructions", backgroundColor: "rgb(20, 70, 20)", mouseHoverColor : "rgb(50,130,50)",  font : "16px Arial"});
 
@@ -93,7 +93,7 @@
                /*************************************
                 * Text stimuli
                 ************************************/
-               let instruction_text = new Text({text : "Press the button or press the spacebar to mark the current frame as the start of an event", position : [0, -215], color : TEXT_COLOR, font : "18px Arial"});
+               let instruction_text = new Text({text : "Press the button or press the spacebar to mark the current frame as the boundary of event", position : [0, -215], color : TEXT_COLOR, font : "18px Arial"});
                let completed_text   = new Text({text : "Press ready when all events are marked (requires at least 3)!", position: [0, -280], color : TEXT_COLOR, font : "16px Arial"});
 
                /**********************************
@@ -117,20 +117,20 @@
                    if(experimentData.markerMode !== "delete")
                        return;
 
-                   if (experimentData.currentMarkerPair.length == 1 && experimentData.currentMarkerPair[0].id == bookmarkID){
+                   if (experimentData.currentMarker.id == bookmarkID){
                            slider.removeBookmark(bookmarkID);
-                           experimentData.currentMarkerPair = [];
+                           experimentData.currentMarker = {};
                            return;
                    }
 
-                   for( let i = 0; i < experimentData.eventMarkerPairs.length; ++i){
-                       if (experimentData.eventMarkerPairs[i][0].id == bookmarkID || experimentData.eventMarkerPairs[i][1].id == bookmarkID){
-                           let bm1 = experimentData.eventMarkerPairs[i][0].id;
-                           let bm2 = experimentData.eventMarkerPairs[i][1].id;
-                           console.log("Deleting bookmark " + bm1.toString() + " and " + bm2.toString());
-                           slider.removeBookmark(experimentData.eventMarkerPairs[i][0].id);
-                           slider.removeBookmark(experimentData.eventMarkerPairs[i][1].id);
-                           experimentData.eventMarkerPairs.splice(i,1);
+                   for( let i = 0; i < experimentData.eventMarkers.length; ++i){
+                       if (experimentData.eventMarkers[i].id == bookmarkID){
+                           let bm = experimentData.eventMarkers[i].id;
+                           //let bm2 = experimentData.eventMarkers[i][1].id;
+                           console.log("Deleting bookmark " + bm.toString());
+                           slider.removeBookmark(experimentData.eventMarkers[i].id);
+                           //slider.removeBookmark(experimentData.eventMarkers[i][1].id);
+                           experimentData.eventMarkers.splice(i,1);
                            break;
                        }
                    }
@@ -175,26 +175,17 @@
 
                mark_event_button.mouseClickedCallback = function(){
                    let color = "";
-                   if (experimentData.currentMarkerPair.length === 1){
-                     color = experimentData.currentMarkerPair[0].color;
-                   } else {
-                     let nMarkers = slider._bookmarks.counter;
-                     let h = (nMarkers*37)%360;
-                     color = 'hsla(' + h.toString() + ', 50%, 50%,0.7)';
-                   }
+                  
+                   let nMarkers = slider._bookmarks.counter;
+                   let h = ((nMarkers+1)*37)%360;
+                   color = 'hsla(' + h.toString() + ', 50%, 50%, 0.7)';
+                   
                    let id = slider.addBookmark(color);
-
-                   experimentData.currentMarkerPair.push({id: id, frame: experimentData.currentImageFrame, color: color});
-                   if (experimentData.currentMarkerPair.length === 2){
-                       experimentData.eventMarkerPairs.push(experimentData.currentMarkerPair);
-                       experimentData.currentMarkerPair = [];
-                       instruction_text.text = "Press the button or press the spacebar to mark the current frame as the start of an event";
-                       mark_event_button.label = "Mark event start";
-                   } else {
-                       instruction_text.text = "Press the button or press the spacebar to mark the current frame as the end of an event";
-                       mark_event_button.text = "Mark event end";
-                   }
-
+                   experimentData.currentMarker = {id: id, frame: experimentData.currentImageFrame, color: color};
+                   instruction_text.text = "Press the button or press the spacebar to mark the current frame as the boundary of event";
+                   mark_event_button.text = "Mark event";
+                   experimentData.eventMarkers.push(experimentData.currentMarker);
+                   experimentData.currentMarker = {};
                    ready_button.enabled = validateMinimumRequirement();
                };
 
@@ -215,14 +206,10 @@
                        this.label = "Enable eraser";
                        this._backgroundColor = "rgb(20, 70, 20)";
                        this._mouseHoverColor = "rgb(50,130,50)";
-                       if (experimentData.currentMarkerPair.length === 0){
-                         instruction_text.text = "Press the button or press the spacebar to mark the current frame as the start of an event";
-                         mark_event_button.label = "Mark event start";
-                       }
-                       else {
-                         instruction_text.text = "Press the button or press the spacebar to mark the current frame as the end of an event";
-                         mark_event_button.text = "Mark event end";
-                       }
+                       
+                       instruction_text.text = "Press the button or press the spacebar to mark the current frame as the boundary of event";
+                       mark_event_button.label = "Mark event";
+                      
                        enable_controls = true;
                    }
                    button_play.enabled = enable_controls;
@@ -606,7 +593,7 @@
                        let filePath = "";
                        if(i < 4) filePath = "NA";
                        else filePath = experimentData.currentMovie + "/" + (i - 4) * 6 + ".png ";
-                       experimentData.slideshow_data.push({'filePath' : filePath, 'frame' : i-4, 'requested_onset':null, 'onset_call' : null, 'rt': null, 'fullscreen':0});
+                       experimentData.slideshow_data.push({'WorkerID':experimentData.turkID, 'filePath' : filePath, 'frame' : i-4, 'requested_onset':null, 'onset_call' : null, 'rt': null, 'fullscreen':0});
                    }
                }
 
@@ -781,8 +768,8 @@
                         REQUESTED_MOVIE = REAL_MOVIE;
                    
                         experimentData.currentImageFrame = 0;
-                        experimentData.currentMarkerPair = [];
-                        experimentData.eventMarkerPairs = [];
+                        experimentData.currentMarker = {};
+                        experimentData.eventMarkers = [];
                         slider._bookmarks = {counter: 0, bookmarkDict : {}, drawList : []};
                         
                         movie_image.image = imageLoader.getImage(REQUESTED_MOVIE + experimentData.currentImageFrame.toString());
@@ -793,12 +780,12 @@
                    
 
                    w.clearKeyboardBuffer();
-                   instruction_text.text = "Please indicate all of the events that happened. For each event, mark the start and end frames on the timeline."
+                   instruction_text.text = "Please indicate all of the events that happened. For each event, mark the boundary frame on the timeline."
                    instruction_text.position = [0, -215];
                    instruction_text.font = "18px Arial";
                    enableEventMarkingControls(true);
                }
-                // This function gets called before the event marking screen is shown
+               // This function gets called before the event marking screen is shown
                // The first time this happens (when movie_image.image == null), the slider and movie image are also configured
                function initiateEventMarkingPractice(){
                     REQUESTED_MOVIE = PRACTICE_MOVIE;
@@ -862,7 +849,7 @@
                     
                    let marker_data = getMarkerData();
                     
-                   return marker_data.length >= experimentData.minEventsRequired && experimentData.currentMarkerPair.length != 1;
+                   return marker_data.length >= experimentData.minEventsRequired;
                }
 
                // Constructs a list with marked events
@@ -870,20 +857,16 @@
                    let bookmarks = slider.getBookmarks();
                    let marker_data = [];
 
-                   for(let i = 0; i < experimentData.eventMarkerPairs.length; ++i){
-                       let first = experimentData.eventMarkerPairs[i][0].id;
-                       let second= experimentData.eventMarkerPairs[i][1].id;
+                   for(let i = 0; i < experimentData.eventMarkers.length; ++i){
+                       let marker = experimentData.eventMarkers[i].id;
+                       //let second= experimentData.eventMarkers[i][1].id;
 
-                       let first_frame  = Math.ceil(bookmarks[first].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
-                       let second_frame = Math.ceil(bookmarks[second].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
-                        if(first_frame == 0) first_frame = 1;
-                        if(second_frame == 0) second_frame = 1;
-                        if(first_frame > second_frame) {
-                            let temp = first_frame;
-                            first_frame = second_frame;
-                            second_frame = temp;
-                        }
-                       let row_data = {'filePath': experimentData.testMovie + "/" + i * 6 + ".png", 'trial' : (i+1), 'first_id' : first.toString(), 'second_id' : second.toString(), 'first_frame' : first_frame, 'second_frame': second_frame};
+                       let frame  = Math.ceil(bookmarks[marker].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
+                       //let second_frame = Math.ceil(bookmarks[second].value * movie_parameters[REQUESTED_MOVIE]['max_images']);
+                        if(frame == 0) frame = 1;
+                        //if(second_frame == 0) second_frame = 1;
+                        
+                       let row_data = {'WorkerID': experimentData.turkID, 'trial' : (i+1), 'marker_id' : marker.toString(), 'frame' : frame};
                        marker_data.push(row_data);
                    }
 
