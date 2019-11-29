@@ -44,7 +44,7 @@ how_well = formdata.getvalue("how_well",   "HOW_WELL_NULL")
 decision_criterion = formdata.getvalue("decision_criterion",   "DECISION_CRITERION_NULL")
 comp_code = formdata.getvalue("comp_code",   "COMP_CODE_NULL")
 
-output_fname = output_fname.format(workerid);
+output_fname = output_fname.format(workerid)
 timestamp_str = '{0}'.format( datetime.datetime.utcnow() )
 filehandle = open(output_fname, 'a')
 to_print = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t{17}\t{18}\t{19}\t{20}\t\n'.format(workerid,gender,age,win_resized,total_time,condition,which_quarter,motion_toward_me,match_side,overall_flip,response,RT,movieName,admitted_switching,summarize_instructions,clear_enough,heard_of,display_problems,how_well,decision_criterion,comp_code)
